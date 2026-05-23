@@ -81,7 +81,7 @@
         </button>
       </div>
 
-      <div class="hidden md:flex items-center gap-2 text-sm text-gray-500">
+      <div class="kbd-hints hidden md:flex items-center gap-2 text-sm text-gray-500">
         מקשי קיצור:
         <span class="kbd">F1</span> פתח חיפוש &middot;
         <span class="kbd">F2</span> טוגל חיפוש &middot;
@@ -226,36 +226,48 @@
   </template>
 
   <template id="viewCardTpl">
-    <article class="card rounded-2xl p-4 flex gap-3">
+    <article class="card rounded-2xl p-3 md:p-4 flex gap-3">
       <img class="poster" />
       <div class="min-w-0 w-full">
-        <div class="flex flex-wrap items-start gap-2">
-          <h3 class="font-extrabold text-lg name"></h3>
-          <span class="ms-auto text-sm text-gray-500 date"></span>
-          <button type="button"
-                  class="editBtn text-blue-600 text-sm px-2 py-1 rounded hover:bg-blue-50">עריכה</button>
-          <button type="button"
-                  class="delBtn text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">מחק</button>
-          <div class="w-full mt-2 hidden editRow">
+
+        <!-- כותרת + כפתורי ניהול -->
+        <div class="flex flex-wrap items-start gap-x-2 gap-y-0.5">
+          <h3 class="font-extrabold text-base leading-snug name flex-1 min-w-0"></h3>
+          <div class="flex items-center gap-1 shrink-0">
+            <span class="text-xs text-gray-400 date"></span>
+            <button type="button"
+                    class="editBtn text-blue-600 text-xs px-1.5 py-0.5 rounded hover:bg-blue-50">עריכה</button>
+            <button type="button"
+                    class="delBtn text-red-500 text-xs px-1.5 py-0.5 rounded hover:bg-red-50">מחק</button>
+          </div>
+          <div class="w-full mt-1 hidden editRow">
             <div class="flex flex-wrap gap-2 items-center">
-              <input type="date" class="input w-auto rounded-xl px-3 py-2 editDate">
-              <textarea class="input editNotes" rows="1" placeholder="ערוך הערות…"></textarea>
-              <button type="button" class="saveEdit btn rounded-xl px-3 py-2">שמירה</button>
-              <button type="button" class="cancelEdit rounded-xl px-3 py-2 border pill">ביטול</button>
+              <input type="date" class="input rounded-xl px-2 py-1.5 text-sm editDate">
+              <textarea class="input editNotes flex-1" rows="1" placeholder="ערוך הערות…"></textarea>
+              <button type="button" class="saveEdit btn rounded-xl px-3 py-1.5 text-sm">שמירה</button>
+              <button type="button" class="cancelEdit rounded-xl px-3 py-1.5 text-sm border pill">ביטול</button>
             </div>
           </div>
         </div>
-        <div class="flex flex-wrap gap-2 my-1 chips"></div>
+
+        <!-- צ'יפים -->
+        <div class="flex flex-wrap gap-1.5 my-1.5 chips"></div>
+
+        <!-- תקציר + שחקנים + הערות -->
         <p class="text-sm text-gray-700 overview truncate-4"></p>
-        <div class="text-sm text-gray-600 cast mt-1"></div>
-        <div class="text-sm text-cyan-700 mt-2 notes"></div>
+        <div class="text-xs text-gray-500 cast mt-1"></div>
+        <div class="text-sm text-cyan-700 mt-1 notes"></div>
+
+        <!-- כפתורי פעולה (JS ישים כאן) -->
+        <div class="actions flex flex-wrap gap-1.5 mt-2"></div>
+
       </div>
     </article>
   </template>
 
   <!-- ===== Actor drawer (right) ===== -->
   <aside id="actorDrawer"
-         class="fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl
+         class="fixed top-0 right-0 h-full w-full md:w-[420px] bg-white shadow-2xl
                 translate-x-full transition-transform duration-300 z-50 flex flex-col">
     <div class="flex items-center gap-3 p-4 border-b">
       <img id="actorPhoto" class="w-14 h-14 rounded-lg object-cover hidden" alt="">
@@ -270,7 +282,7 @@
 
   <!-- ===== Movie drawer (left) ===== -->
   <aside id="movieDrawer"
-         class="fixed top-0 left-0 h-full w-[440px] bg-white shadow-2xl
+         class="fixed top-0 left-0 h-full w-full md:w-[440px] bg-white shadow-2xl
                 -translate-x-full transition-transform duration-300 z-40 flex flex-col">
     <div class="flex gap-3 p-4 border-b">
       <img id="moviePoster" class="w-20 rounded-lg hidden" alt="">

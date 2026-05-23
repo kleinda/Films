@@ -223,6 +223,39 @@ button.pill.rv-pill:hover { background: #D8ECFF; border-color: #C8E2FF; }
 }
 .empty-state-icon { font-size: 2.8rem; margin-bottom: .5rem; }
 
+/* ===== Mobile responsive ===== */
+@media (max-width: 640px) {
+  /* כרטיס סרט */
+  .poster {
+    inline-size: 56px;
+    block-size: 84px;
+  }
+
+  /* כפתורי פעולה קטנים יותר */
+  .tw-btn,
+  .nx-btn,
+  .rv-pill {
+    font-size: .78rem;
+    padding: .15rem .4rem;
+  }
+
+  /* chips קטנים */
+  .chip {
+    font-size: .7rem;
+    padding: .1rem .45rem;
+  }
+
+  /* הדר – הסתר מקשי קיצור */
+  .kbd-hints { display: none; }
+
+  /* stats bar קומפקטי */
+  .stats-bar {
+    font-size: .75rem;
+    padding: .2rem .6rem;
+    gap: .6rem;
+  }
+}
+
 /* ===== Fade-in for list cards ===== */
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(6px); }
