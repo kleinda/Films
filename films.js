@@ -28,16 +28,18 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import {
   getAuth,
-  signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // === Init Firebase ===
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-signInAnonymously(auth).catch((err) =>
-  console.warn("Anonymous sign-in failed", err)
-);
+const googleProvider = new GoogleAuthProvider();
 const db = getFirestore(app);
 const VIEWS = collection(db, "views");
 
@@ -519,6 +521,30 @@ $("#addForm").addEventListener("submit", async (e) => {
   }
 });
 
+// === Auth UI handlers ===
+const isMobile = /Mobi|iPhone|iPad|Android/i.test(navigator.userAgent);
+
+// טיפול בחזרה מ-redirect (iOS/מובייל)
+getRedirectResult(auth).catch((err) => console.warn("redirect result:", err));
+
+document.getElementById("signInBtn")?.addEventListener("click", async () => {
+  try {
+    if (isMobile) {
+      await signInWithRedirect(auth, googleProvider); // iOS: redirect במקום popup
+    } else {
+      await signInWithPopup(auth, googleProvider);    // desktop: popup רגיל
+    }
+  } catch (err) {
+    console.error("Sign in failed:", err);
+    alert("כניסה נכשלה – נסה שוב");
+  }
+});
+
+document.getElementById("signOutBtn")?.addEventListener("click", async () => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  await signOut(auth);
+});
+
 // === Live data ===
 const qRecent = query(VIEWS, orderBy("watchDate", "desc"), limit(200));
 let allViews = [];
@@ -526,10 +552,25 @@ let unsubscribe = null;
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    console.log("⏳ מתחבר ל-Firebase...");
+    document.getElementById("loginScreen")?.classList.remove("hidden");
+    document.getElementById("appContent")?.classList.add("hidden");
+    viewsList.innerHTML = "";
     return;
   }
-  console.log("✅ מחובר:", user.uid);
+
+  // מחובר – הסתר מסך כניסה, הצג אפליקציה
+  document.getElementById("loginScreen")?.classList.add("hidden");
+  document.getElementById("appContent")?.classList.remove("hidden");
+
+  // הצג תמונה ושם משתמש בהדר
+  const photoEl = document.getElementById("userPhoto");
+  const nameEl  = document.getElementById("userName");
+  const infoEl  = document.getElementById("userInfo");
+  if (infoEl) infoEl.classList.remove("hidden");
+  if (photoEl && user.photoURL) { photoEl.src = user.photoURL; photoEl.classList.remove("hidden"); }
+  if (nameEl) nameEl.textContent = user.displayName || user.email || "";
+
+  console.log("✅ מחובר:", user.email, user.uid);
 
   if (unsubscribe) unsubscribe();
   unsubscribe = onSnapshot(qRecent, (snap) => {
