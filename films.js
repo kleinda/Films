@@ -30,8 +30,6 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -522,18 +520,9 @@ $("#addForm").addEventListener("submit", async (e) => {
 });
 
 // === Auth UI handlers ===
-const isMobile = /Mobi|iPhone|iPad|Android/i.test(navigator.userAgent);
-
-// טיפול בחזרה מ-redirect (iOS/מובייל)
-getRedirectResult(auth).catch((err) => console.warn("redirect result:", err));
-
 document.getElementById("signInBtn")?.addEventListener("click", async () => {
   try {
-    if (isMobile) {
-      await signInWithRedirect(auth, googleProvider); // iOS: redirect במקום popup
-    } else {
-      await signInWithPopup(auth, googleProvider);    // desktop: popup רגיל
-    }
+    await signInWithPopup(auth, googleProvider);
   } catch (err) {
     console.error("Sign in failed:", err);
     alert("כניסה נכשלה – נסה שוב");
