@@ -12,6 +12,40 @@
 
 <body class="min-h-screen text-gray-800">
 
+  <!-- ===== מסך כניסה ===== -->
+  <div id="loginScreen"
+       class="fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm w-full mx-4"
+         style="box-shadow:0 16px 48px rgba(0,0,0,.12)">
+      <svg class="mx-auto mb-4" width="48" height="48" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"  stop-color="#7C3AED"/>
+            <stop offset="50%" stop-color="#E11D48"/>
+            <stop offset="100%" stop-color="#F59E0B"/>
+          </linearGradient>
+        </defs>
+        <path d="M6 22h52v30a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V22z" fill="url(#lg)"/>
+        <path d="M6 22l6-12h12l-6 12h12l6-12h12l-6 12h12l6-12v12H6z" fill="#111" opacity=".9"/>
+      </svg>
+      <h1 class="text-2xl font-extrabold mb-1"
+          style="background-image:linear-gradient(135deg,#7c3aed,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        DAVID FILMS
+      </h1>
+      <p class="text-gray-500 mb-6 text-sm">יומן הצפייה האישי שלי</p>
+      <button id="signInBtn"
+              class="btn rounded-xl px-5 py-3 w-full font-semibold flex items-center justify-center gap-3 text-base">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 19 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.3L6 33.8C9.4 39.7 16.2 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.5-4.6 5.8l6.2 5.2C40.8 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/>
+        </svg>
+        כניסה עם Google
+      </button>
+    </div>
+  </div>
+
   <!-- ===== Header ===== -->
   <header class="sticky top-0 z-20 backdrop-blur bg-white/70 border-b border-gray-200">
     <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
@@ -37,7 +71,17 @@
       <!-- Stats bar (filled by JS) -->
       <div id="statsBar" class="stats-bar hidden"></div>
 
-      <div class="ms-auto hidden md:flex items-center gap-2 text-sm text-gray-500">
+      <!-- User info -->
+      <div id="userInfo" class="hidden ms-auto flex items-center gap-2">
+        <img id="userPhoto" class="w-8 h-8 rounded-full hidden" alt="">
+        <span id="userName" class="text-sm text-gray-600 hidden md:inline"></span>
+        <button id="signOutBtn"
+                class="text-xs text-gray-400 hover:text-red-500 transition px-2 py-1 rounded border border-gray-200 hover:border-red-300">
+          יציאה
+        </button>
+      </div>
+
+      <div class="hidden md:flex items-center gap-2 text-sm text-gray-500">
         מקשי קיצור:
         <span class="kbd">F1</span> פתח חיפוש &middot;
         <span class="kbd">F2</span> טוגל חיפוש &middot;
@@ -47,7 +91,8 @@
     </div>
   </header>
 
-  <!-- ===== Main content ===== -->
+  <!-- ===== Main content (hidden until signed in) ===== -->
+  <div id="appContent" class="hidden">
   <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
     <!-- Add form -->
@@ -245,6 +290,8 @@
                  items-center gap-1 shadow-lg z-30">
     Netflix Top 10 🔥
   </button>
+
+  </div><!-- /appContent -->
 
   <script type="module" src="films.js"></script>
 </body>
