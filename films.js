@@ -529,8 +529,9 @@ if (isChromeIOS) {
   if (btn) {
     btn.innerHTML = `<span>פתח ב-Safari להתחברות</span>`;
     btn.addEventListener("click", () => {
-      window.location.href = "x-web-search://?url=" + encodeURIComponent(location.href);
-      setTimeout(() => alert("העתק את הקישור ופתח אותו ב-Safari:\n" + location.href), 500);
+      // מעתיק את הכתובת ללוח
+      navigator.clipboard?.writeText(location.href).catch(() => {});
+      alert("Chrome לא תומך בכניסה עם Google.\n\nהעתק את הכתובת:\n" + location.href + "\n\nפתח אותה ב-Safari.");
     });
   }
 } else {
