@@ -513,6 +513,7 @@ $("#addForm").addEventListener("submit", async (e) => {
     pickedMovieJson.value = "";
     if (toWatchEl) toWatchEl.checked = false;
     preview.host.classList.add("hidden");
+    setAddExpanded(false);
   } catch (err) {
     console.error(err);
     saveStatus.textContent = "שגיאה בשמירה";
@@ -963,6 +964,7 @@ window.addEventListener("keydown", (e) => {
     if (willOpen) document.querySelector("#searchBox")?.focus();
   } else if (e.code === "F3") {
     e.preventDefault();
+    setAddExpanded(true);
     document.querySelector("#movieInput")?.focus();
   }
 });
@@ -997,6 +999,27 @@ document.querySelector("#clearFilters")?.addEventListener("click", () => {
 });
 
 setExpanded(false);
+
+// === Add panel toggle ===
+const toggleAddBtn  = document.getElementById("toggleAdd");
+const addPanel      = document.getElementById("addPanel");
+const addCaretEl    = document.getElementById("addCaret");
+
+function setAddExpanded(expanded) {
+  if (!addPanel) return;
+  addPanel.classList.toggle("hidden", !expanded);
+  toggleAddBtn?.setAttribute("aria-expanded", String(expanded));
+  if (addCaretEl) addCaretEl.textContent = expanded ? "▲" : "▼";
+  if (expanded) document.getElementById("movieInput")?.focus();
+}
+
+toggleAddBtn?.addEventListener("click", () => {
+  setAddExpanded(addPanel.classList.contains("hidden"));
+});
+
+// F3 פותח גם את הטופס
+// (override the existing F3 handler to also open the panel)
+
 
 // === Actor drawer ===
 const actorDrawer = document.getElementById("actorDrawer");
