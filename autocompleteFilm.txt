@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>חיפוש סרטים עם השלמה אוטומטית + שחקנים בכותרת</title>
+  <style>
+    #suggestions { border: 1px solid #999; max-width: 250px; cursor: pointer; background: white; position: absolute; z-index: 1000; }
+    #suggestions div { padding: 5px; }
+    #suggestions div:hover { background: #eee; }
+    #movieDetails img { margin-top: 10px; display: block; }
+    #castTitle { margin-top: 10px; font-weight: bold; font-size: 1.1em; }
+  </style>
+</head>
+<body>
+  <label for="movieSearch">חפש סרט:</label><br>
+  <input type="text" id="movieSearch" autocomplete="off" style="width: 250px;">
+  <div id="suggestions"></div>
+  <div id="movieDetails" style="margin-top: 20px; max-width: 600px;"></div>
+  <div id="castTitle"></div>
+
+  <script>
+    const apiKey = '4b474d1fb4cba200d8a4d1fcee2a5ba4'
+
+    document.getElementById('movieSearch').addEventListener('input', async function() {
+      let query = this.value.trim();
+      if (query.length < 2) {
+        document.getElementById('suggestions').innerHTML = '';
+        document.getElementById('castTitle').innerHTML = '';
+        document.getElementById('movieDetails').innerHTML = '';
+        return;
+      }
+      let url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&language=he&query=${encodeURIComponent(query)}`;
+      let resp = await fetch(url);
+      let data = await resp.json();
+      let suggestDiv = document.getElementById('suggestions');
+      suggestDiv.innerHTML = '';
+      (data.results || []).slice(0, 7).forEach(movie => {
+        let div = document.createElement('div');
+        div.textContent = movie.title + (movie.release_date ? ' (' + movie.release_date.substring(0,4) + ')' : '');
+        div.addEventListener('click', () => showDetails(movie.id));
+        suggestDiv.appendChild(div);
+      });
+    });
+
+    async function showDetails(movieId) {
+      let urlDetails = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=he`;
+      let respDetails = await fetch(urlDetails);
+      let movie = await respDetails.json();
+
+      // קרדיטים בראשית default (ללא language=he) כדי לקבל תמיד שמות
+      let urlCredits = `https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${apiKey}`;
+      let respCredits = await fetch(urlCredits);
+      let credits = await respCredits.json();
+
+      let castNames = (credits.cast || []).slice(0, 5).map(actor => actor.name).join(', ');
+
+      let detailsDiv = document.getElementById('movieDetails');
+      let castDiv = document.getElementById('castTitle');
+      detailsDiv.innerHTML = `
+        <h3>${movie.title} (${movie.release_date?.substring(0,4)})</h3>
+        <p><strong>תקציר:</strong> ${movie.overview || 'אין תקציר.'}</p>
+        <p><strong>דירוג:</strong> ${movie.vote_average || 'N/A'}</p>
+        ${movie.poster_path ? `<img src="https://image.tmdb.org/t/p/w200${movie.poster_path}" alt="פוסטר הסרט">` : ''}
+      `;
+
+      castDiv.innerHTML = castNames ? `שחקנים מובילים: ${castNames}` : 'שחקנים מובילים: לא זמין';
+
+      document.getElementById('suggestions').innerHTML = '';
+      document.getElementById('movieSearch').value = movie.title;
+    }
+  </script>
+</body>
+</html>

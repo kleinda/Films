@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DAVID FILMS – יומן צפייה</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="films.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237C3AED'/%3E%3Cstop offset='0.5' stop-color='%23E11D48'/%3E%3Cstop offset='1' stop-color='%23F59E0B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M6 22h52v30a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V22z' fill='url(%23g1)'/%3E%3Cpath d='M6 22l6-12h12l-6 12h12l6-12h12l-6 12h12l6-12v12H6z' fill='%23111' opacity='.9'/%3E%3C/svg%3E">
+</head>
+
+<body class="min-h-screen text-gray-800">
+
+  <!-- ===== Header ===== -->
+  <header class="sticky top-0 z-20 backdrop-blur bg-white/70 border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+
+      <div class="app-title text-2xl">
+        <svg class="app-logo" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"  stop-color="#7C3AED"/>
+              <stop offset="50%" stop-color="#E11D48"/>
+              <stop offset="100%" stop-color="#F59E0B"/>
+            </linearGradient>
+          </defs>
+          <path d="M6 22h52v30a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V22z" fill="url(#g1)"/>
+          <path d="M6 22l6-12h12l-6 12h12l6-12h12l-6 12h12l6-12v12H6z" fill="#111" opacity=".9"/>
+        </svg>
+        <span style="background-image:linear-gradient(135deg,#7c3aed,#06b6d4);"
+              class="bg-clip-text text-transparent">
+          DAVID FILMS &bull; יומן צפייה
+        </span>
+      </div>
+
+      <!-- Stats bar (filled by JS) -->
+      <div id="statsBar" class="stats-bar hidden"></div>
+
+      <div class="ms-auto hidden md:flex items-center gap-2 text-sm text-gray-500">
+        מקשי קיצור:
+        <span class="kbd">F1</span> פתח חיפוש &middot;
+        <span class="kbd">F2</span> טוגל חיפוש &middot;
+        <span class="kbd">F3</span> סרט חדש
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===== Main content ===== -->
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Add form -->
+    <section class="card rounded-2xl p-4 md:p-6 frame-orange">
+      <h2 class="text-xl font-bold mb-4">הוסף צפייה</h2>
+      <form id="addForm" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+
+        <div class="md:col-span-4">
+          <label class="block text-sm mb-1">שם סרט</label>
+          <div class="relative">
+            <input id="movieInput" class="input w-full rounded-xl px-3 py-2"
+                   placeholder="הקלד שם…" autocomplete="off" />
+            <div id="searchResults"
+                 class="absolute inset-x-0 top-full mt-1 bg-white rounded-xl shadow border border-gray-200 hidden max-h-80 overflow-auto z-50">
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-3">
+          <label class="block text-sm mb-1">תאריך צפייה</label>
+          <input id="watchDate" type="date" class="input w-full rounded-xl px-3 py-2" />
+        </div>
+
+        <div class="md:col-span-5">
+          <label class="block text-sm mb-1">הערות</label>
+          <input id="notes" class="input w-full rounded-xl px-3 py-2"
+                 placeholder="מה חשבת? עם מי צפית?" />
+        </div>
+
+        <div class="md:col-span-12">
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" id="toWatch">
+            לצפייה עתידית (עדיין לא צפיתי)
+          </label>
+        </div>
+
+        <input type="hidden" id="pickedMovieJson" />
+
+        <div class="md:col-span-12 flex gap-2 items-center">
+          <button class="btn rounded-xl px-4 py-2 font-semibold" id="saveBtn" type="submit">שמירה</button>
+          <button class="rounded-xl px-4 py-2 font-semibold border pill" id="clearBtn" type="button">ניקוי</button>
+          <div id="saveStatus" class="ms-auto text-sm text-gray-600"></div>
+        </div>
+
+      </form>
+
+      <!-- Selected movie preview -->
+      <div id="pickedPreview" class="mt-4 hidden">
+        <div class="flex gap-3 items-start">
+          <img id="previewPoster" class="poster hidden" alt="" />
+          <div class="min-w-0 flex-1">
+            <div id="previewTitle" class="font-bold"></div>
+            <div id="previewRating" class="text-sm text-amber-600 mt-0.5"></div>
+            <div id="previewGenres" class="flex flex-wrap gap-2 my-1"></div>
+            <div id="previewCast" class="text-sm text-gray-600"></div>
+            <div id="previewOverview" class="text-sm text-gray-700 mt-2"></div>
+            <button id="unpickBtn" type="button" class="mt-2 text-xs text-blue-600 underline">בטל בחירה</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search toggle -->
+    <div class="flex items-center gap-2">
+      <button id="toggleSearch" type="button" class="pill px-3 py-1 rounded-xl"
+              aria-expanded="false" aria-controls="searchPanel">
+        חיפוש <span id="caret">▼</span>
+      </button>
+    </div>
+
+    <!-- Search panel -->
+    <section id="searchPanel" class="card rounded-2xl p-4 md:p-6 frame-orange hidden">
+      <div class="flex flex-col md:flex-row gap-3 md:items-end flex-wrap">
+
+        <div class="md:w-1/2">
+          <label class="block text-sm mb-1">חיפוש לפי שם סרט</label>
+          <input id="searchBox" class="input w-full rounded-xl px-3 py-2"
+                 placeholder="הקלד/י לחיפוש… (גם באנגלית)" />
+          <button id="clearFilters" type="button" class="pill px-3 py-2 rounded-xl mt-2">ניקוי חיפוש</button>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm mt-2">
+          <input type="checkbox" id="filterToWatch">
+          הצג רק סרטים לצפייה (שטרם ראיתי)
+        </label>
+
+        <div class="md:w-1/4">
+          <label class="block text-sm mb-1">סינון לפי ז'אנר</label>
+          <select id="genreFilter" class="input w-full rounded-xl px-3 py-2">
+            <option value="">הכול</option>
+          </select>
+        </div>
+
+        <div class="md:w-1/4">
+          <label class="block text-sm mb-1">טווח תאריכים</label>
+          <div class="flex flex-wrap gap-2">
+            <input id="fromDate" type="date" class="input flex-1 min-w-[9rem] rounded-xl px-3 py-2" />
+            <input id="toDate"   type="date" class="input flex-1 min-w-[9rem] rounded-xl px-3 py-2" />
+          </div>
+        </div>
+
+        <div class="md:w-1/3">
+          <label class="block text-sm mb-1">סינון לפי שפה</label>
+          <select id="langFilter" multiple class="input w-full rounded-xl px-3 py-2"></select>
+          <label class="inline-flex items-center gap-2 mt-1 text-sm">
+            <input type="checkbox" id="langRequireAll">
+            חייב לכלול את כולן
+          </label>
+          <div class="text-xs text-gray-500 mt-1">טיפ: Ctrl/⌘ לבחירה מרובה</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Films list -->
+    <section class="space-y-3" id="viewsList"></section>
+
+  </main>
+
+  <!-- ===== Templates ===== -->
+  <template id="resultItemTpl">
+    <button type="button"
+            class="w-full text-right px-3 py-2 hover:bg-gray-50 flex gap-3 items-start">
+      <img class="poster" />
+      <div class="min-w-0">
+        <div class="font-semibold leading-tight name"></div>
+        <div class="text-xs text-gray-600 altname"></div>
+        <div class="text-xs text-gray-500 mt-1 overview truncate-2"></div>
+      </div>
+    </button>
+  </template>
+
+  <template id="viewCardTpl">
+    <article class="card rounded-2xl p-4 flex gap-3">
+      <img class="poster" />
+      <div class="min-w-0 w-full">
+        <div class="flex flex-wrap items-start gap-2">
+          <h3 class="font-extrabold text-lg name"></h3>
+          <span class="ms-auto text-sm text-gray-500 date"></span>
+          <button type="button"
+                  class="editBtn text-blue-600 text-sm px-2 py-1 rounded hover:bg-blue-50">עריכה</button>
+          <button type="button"
+                  class="delBtn text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">מחק</button>
+          <div class="w-full mt-2 hidden editRow">
+            <div class="flex flex-wrap gap-2 items-center">
+              <input type="date" class="input w-auto rounded-xl px-3 py-2 editDate">
+              <textarea class="input editNotes" rows="1" placeholder="ערוך הערות…"></textarea>
+              <button type="button" class="saveEdit btn rounded-xl px-3 py-2">שמירה</button>
+              <button type="button" class="cancelEdit rounded-xl px-3 py-2 border pill">ביטול</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 my-1 chips"></div>
+        <p class="text-sm text-gray-700 overview truncate-4"></p>
+        <div class="text-sm text-gray-600 cast mt-1"></div>
+        <div class="text-sm text-cyan-700 mt-2 notes"></div>
+      </div>
+    </article>
+  </template>
+
+  <!-- ===== Actor drawer (right) ===== -->
+  <aside id="actorDrawer"
+         class="fixed top-0 right-0 h-full w-[420px] bg-white shadow-2xl
+                translate-x-full transition-transform duration-300 z-50 flex flex-col">
+    <div class="flex items-center gap-3 p-4 border-b">
+      <img id="actorPhoto" class="w-14 h-14 rounded-lg object-cover hidden" alt="">
+      <div class="min-w-0">
+        <h3 id="actorTitle" class="font-bold text-lg truncate"></h3>
+        <div class="text-xs text-gray-500">פילמוגרפיה · TMDB</div>
+      </div>
+      <button id="closeActorDrawer" class="ms-auto text-gray-500 hover:text-black text-xl">✕</button>
+    </div>
+    <div id="actorMovies" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
+  </aside>
+
+  <!-- ===== Movie drawer (left) ===== -->
+  <aside id="movieDrawer"
+         class="fixed top-0 left-0 h-full w-[440px] bg-white shadow-2xl
+                -translate-x-full transition-transform duration-300 z-40 flex flex-col">
+    <div class="flex gap-3 p-4 border-b">
+      <img id="moviePoster" class="w-20 rounded-lg hidden" alt="">
+      <div class="min-w-0">
+        <h3 id="movieTitle" class="font-bold text-lg"></h3>
+        <div id="movieMeta" class="text-xs text-gray-600"></div>
+      </div>
+      <button id="closeMovieDrawer" class="ms-auto text-xl text-gray-500">✕</button>
+    </div>
+    <div id="movieContent" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
+  </aside>
+
+  <!-- ===== Netflix Top 10 floating button ===== -->
+  <button id="openNetflixTop"
+          class="hidden lg:flex fixed left-2 top-1/2 -translate-y-1/2
+                 pill nx-pill px-3 py-2 rounded-xl text-sm
+                 items-center gap-1 shadow-lg z-30">
+    Netflix Top 10 🔥
+  </button>
+
+  <script type="module" src="films.js"></script>
+</body>
+
+</html>

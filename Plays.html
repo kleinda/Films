@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PLAYS – יומן הצגות</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --bg:#f7fafc; --card:#ffffff; --accent:#f59e0b; --accent-2:#06b6d4; --chip:#ffedd5;
+    }
+    body{ background: var(--bg); }
+    .card{ background:var(--card); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+    .btn{ background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; }
+    .pill{ border:1px solid #e5e7eb; background:#fff; }
+    .pill:hover{ background:#f8fafc; }
+    .chip{ background:var(--chip); color:#7c2d12; }
+    .input{ border:1px solid #e5e7eb; min-width:0; }
+    .poster{ inline-size:72px; block-size:108px; object-fit:cover; border-radius:.75rem; }
+    .truncate-2{ display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .truncate-4{ display:-webkit-box; -webkit-line-clamp:4; line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+    .kbd{ border:1px solid #e5e7eb; border-bottom-width:3px; padding-inline:6px; padding-block:2px; border-radius:.5rem; }
+    .frame-orange{ border:2px solid #f59e0b; border-radius:1rem; box-shadow:0 0 0 3px rgba(245,158,11,.10) inset; }
+    .frame-orange:hover{ box-shadow:0 0 0 4px rgba(245,158,11,.18) inset; }
+    .alert{ background:#fff7ed; border:1px solid #fdba74; color:#7c2d12; border-radius:.75rem; padding:.5rem .75rem; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-800">
+  <header class="sticky top-0 z-20 backdrop-blur bg-white/70 border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="text-2xl font-extrabold bg-clip-text text-transparent" style="background-image:linear-gradient(135deg,#f59e0b,#06b6d4);">DAVID PLAYS • יומן הצגות</div>
+      <div class="ms-auto hidden md:flex items-center gap-2 text-sm text-gray-500">מקשי קיצור: <span class="kbd">F1</span> פתח חיפוש · <span class="kbd">F2</span> טוגל חיפוש · <span class="kbd">F3</span> שדה "שם הצגה"</div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section class="card rounded-2xl p-4 md:p-6 frame-orange">
+      <h2 class="text-xl font-bold mb-4">הוסף הצגה שנכחתי בה</h2>
+      <form id="addForm" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+        <div class="md:col-span-4">
+          <label class="block text-sm mb-1">שם הצגה</label>
+          <div class="relative">
+            <input id="playInput" class="input w-full rounded-xl px-3 py-2" placeholder="לדוגמה: המלט" autocomplete="off" />
+            <div id="searchResults" class="absolute inset-x-0 top-full mt-1 bg-white rounded-xl shadow border border-gray-200 hidden max-h-80 overflow-auto z-50">
+              <!-- Spinner -->
+              <div id="searchSpinner" class="hidden py-3 flex items-center justify-center">
+                <div class="animate-spin h-5 w-5 rounded-full border-2 border-gray-300 border-t-transparent"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="md:col-span-3">
+          <label class="block text-sm mb-1">תאריך נוכחות</label>
+          <input id="attendDate" type="date" class="input w-full rounded-xl px-3 py-2" />
+        </div>
+        <div class="md:col-span-5">
+          <label class="block text-sm mb-1">הערות (אופציונלי)</label>
+          <input id="notes" class="input w-full rounded-xl px-3 py-2" placeholder="עם מי היית? מושבים, התרשמות וכו׳" />
+        </div>
+        <input type="hidden" id="pickedPlayJson" />
+        <div class="md:col-span-12 flex gap-2">
+          <button class="btn rounded-xl px-4 py-2 font-semibold" id="saveBtn" type="submit">שמירה</button>
+          <button class="rounded-xl px-4 py-2 font-semibold border pill" id="clearBtn" type="button">ניקוי</button>
+          <div id="saveStatus" class="ms-auto text-sm text-gray-600"></div>
+        </div>
+      </form>
+
+      <div id="pickedPreview" class="mt-4 hidden">
+        <div class="flex gap-3 items-start">
+          <img id="previewPoster" class="poster hidden" alt="" />
+          <div class="min-w-0 flex-1">
+            <div id="previewTitle" class="font-bold"></div>
+            <div class="flex flex-wrap gap-2 my-1" id="previewChips"></div>
+            <div id="previewCredits" class="text-sm text-gray-600"></div>
+            <div id="previewOverview" class="text-sm text-gray-700 mt-2"></div>
+            <button id="unpickBtn" type="button" class="mt-2 text-xs text-blue-600 underline">בטל בחירה</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-2 mb-2">
+      <button id="toggleSearch" type="button" class="pill px-3 py-1 rounded-xl" aria-expanded="false" aria-controls="searchPanel">חיפוש <span id="caret">▼</span></button>
+    </div>
+
+    <section id="searchPanel" class="card rounded-2xl p-4 md:p-6 frame-orange hidden">
+      <div class="flex flex-col md:flex-row gap-3 md:items-end">
+        <div class="md:w-1/2">
+          <label class="block text-sm mb-1">חיפוש לפי שם הצגה / תיאטרון</label>
+          <input id="searchBox" class="input w-full rounded-xl px-3 py-2" placeholder="הקלד/י לחיפוש… (גם באנגלית)" />
+          <button id="clearFilters" type="button" class="pill px-3 py-2 rounded-xl mt-2">ניקוי חיפוש</button>
+        </div>
+        <div class="md:w-1/4">
+          <label class="block text-sm mb-1">תיאטרון</label>
+          <select id="theatreFilter" class="input w-full rounded-xl px-3 py-2"><option value="">הכול</option></select>
+        </div>
+        <div class="md:w-1/4">
+          <label class="block text-sm mb-1">טווח תאריכי נוכחות</label>
+          <div class="flex flex-wrap gap-2">
+            <input id="fromDate" type="date" class="input flex-1 min-w-[9rem] rounded-xl px-3 py-2" />
+            <input id="toDate" type="date"   class="input flex-1 min-w-[9rem] rounded-xl px-3 py-2" />
+          </div>
+        </div>
+        <div class="md:w-1/3">
+          <label class="block text-sm mb-1">עיר</label>
+          <select id="cityFilter" class="input w-full rounded-xl px-3 py-2"><option value="">הכול</option></select>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewsSection">
+      <div id="viewsSpinner" class="hidden flex justify-center py-6">
+        <div class="animate-spin h-6 w-6 rounded-full border-2 border-gray-300 border-t-transparent"></div>
+      </div>
+      <div class="space-y-3" id="viewsList"></div>
+    </section>
+
+    <!-- פנל בדיקות (Dev) -->
+    <section class="card rounded-2xl p-4 md:p-6">
+      <details>
+        <summary class="cursor-pointer font-semibold">בדיקות עצמיות (DEV)</summary>
+        <div id="testPanel" class="mt-3 text-sm"></div>
+      </details>
+    </section>
+  </main>
+
+  <template id="resultItemTpl">
+    <button type="button" class="w-full text-right px-3 py-2 hover:bg-gray-50 flex gap-3 items-start">
+      <img class="poster" />
+      <div class="min-w-0">
+        <div class="font-semibold leading-tight name"></div>
+        <div class="text-xs text-gray-600 sub"></div>
+        <div class="text-xs text-gray-500 mt-1 overview truncate-2"></div>
+      </div>
+    </button>
+  </template>
+
+  <template id="viewCardTpl">
+    <article class="card rounded-2xl p-4 flex gap-3">
+      <img class="poster" />
+      <div class="min-w-0 w-full">
+        <div class="flex items-start gap-2">
+          <h3 class="font-extrabold text-lg name"></h3>
+          <span class="ms-auto text-sm text-gray-500 date"></span>
+          <button type="button" class="editBtn text-blue-600 text-sm px-2 py-1 rounded hover:bg-blue-50">עריכה</button>
+          <button type="button" class="delBtn text-red-600 text-sm px-2 py-1 rounded hover:bg-red-50">מחק</button>
+          <div class="mt-2 hidden editRow">
+            <div class="flex flex-wrap gap-2 items-center">
+              <input type="date" class="input w-auto rounded-xl px-3 py-2 editDate">
+              <input type="text" class="input flex-1 rounded-xl px-3 py-2 editNotes" placeholder="הערות">
+              <button type="button" class="saveEdit btn rounded-xl px-3 py-2">שמירה</button>
+              <button type="button" class="cancelEdit rounded-xl px-3 py-2 border pill">ביטול</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 my-1 chips"></div>
+        <p class="text-sm text-gray-700 overview truncate-4"></p>
+        <div class="text-sm text-gray-600 credits mt-1"></div>
+        <div class="text-sm text-cyan-700 mt-2 notes"></div>
+      </div>
+    </article>
+  </template>
+
+  <script type="module">
+    // === Firebase (נשאר כמו אצלך) ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNWMliT0qTW0STk7iwImwat_-lCTj3kP8",
+      authDomain: "films-5c7ff.firebaseapp.com",
+      projectId: "films-5c7ff",
+      storageBucket: "films-5c7ff.firebasestorage.app",
+      messagingSenderId: "995595387661",
+      appId: "1:995595387661:web:dbdab1f991e6aa65412644"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, getDocs, doc, updateDoc, onSnapshot, query, where, limit, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // אוספים: קטלוג הצגות + יומן צפייה קיים
+    const PLAYS = collection(db, 'plays_catalog');
+    const VIEWS = collection(db, 'views'); // בשדה mediaType='play'
+
+    // חשיפה לקונסול
+    Object.assign(window, { db, VIEWS, PLAYS, getDocs, doc, updateDoc });
+
+    // === דום ===
+    const $ = s => document.querySelector(s);
+    const playInput = $('#playInput');
+    const searchResults = $('#searchResults');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const pickedPlayJson = $('#pickedPlayJson');
+    const preview = { host: $('#pickedPreview'), poster: $('#previewPoster'), title: $('#previewTitle'), chips: $('#previewChips'), credits: $('#previewCredits'), overview: $('#previewOverview') };
+
+    const attendDateEl = $('#attendDate');
+    const notesEl = $('#notes');
+    const saveStatus = $('#saveStatus');
+    const viewsList = $('#viewsList');
+    const viewsSpinner = document.getElementById('viewsSpinner');
+    const resultItemTpl = document.getElementById('resultItemTpl');
+    const viewCardTpl = document.getElementById('viewCardTpl');
+    let toggleBtn, searchPanel, caretEl;
+
+    const todayStr = new Date().toISOString().slice(0,10);
+    attendDateEl.value = todayStr;
+
+    let allViews = [];
+    clearPicked();
+
+    // === עזרי זמן/בטיחות ===
+    function toDateOnly(d){ try{ return d.toISOString().slice(0,10); }catch{ return ''; } }
+    function fmtDate(d){ try{ return d.toLocaleDateString('he-IL',{year:'numeric',month:'2-digit',day:'2-digit'}); }catch{ return ''; } }
+    function millisFromFirestoreTs(ts){
+      // מקבל Timestamp, FieldValue, מחרוזת או undefined ומחזיר מילישניות
+      try{ if(ts && typeof ts.toMillis === 'function') return ts.toMillis(); }catch {}
+      try{ if(ts && typeof ts.toDate === 'function') return ts.toDate().getTime(); }catch {}
+      if(ts && typeof ts === 'object' && typeof ts.seconds === 'number') return ts.seconds*1000;
+      if(typeof ts === 'string'){ const t = Date.parse(ts); return isNaN(t)?0:t; }
+      return 0;
+    }
+
+    // === מנוע חיפוש הצגות – מאוחד (Firestore + Wikidata + Wikipedia) ===
+    // — מאחד: DB + Wikidata + Wikipedia (מועשרת), עם נפילות רכות ו-fallback
+    async function searchUnified(qStr){
+      const qv = (qStr || '').trim();
+      if (!qv) return [];
+
+      // בוחר ספקים דינאמית (גם אם לא נחשפו גלובלית)
+      const getFn = (name, fallback) =>
+        (typeof window[name] === 'function' ? window[name] :
+        (typeof self !== 'undefined' && typeof self[name] === 'function' ? self[name] : fallback));
+
+      const fs = getFn('searchFirestore', async () => []);
+      // נעדיף את הגרסה שמחזירה תקציר, ואם אין – ניפול למסונן
+      const wpEnriched = getFn('searchWikipedia', null);
+      const wpFiltered = getFn('searchWikipediaFiltered', async () => []);
+      const wp = wpEnriched ? wpEnriched : wpFiltered;
+      const wd = getFn('searchWikidata', async () => []);
+
+      // מריץ הכל במקביל; ספק נופל לא מפיל את המאחד
+      const settled = await Promise.allSettled([
+        fs(qv),
+        wd(qv),
+        wp(qv).then(arr => {
+          // fallback: אם המסנן מחזיר 0 תוצאות, ננסה חיפוש ויקיפדיה לא-מסונן (כותרת בלבד)
+          if (Array.isArray(arr) && arr.length) return arr;
+          return typeof window.searchWikipedia === 'function'
+            ? window.searchWikipedia(qv).catch(() => [])
+            : arr;
+        })
+      ]);
+
+      const results = [];
+      for (const p of settled) if (p.status === 'fulfilled' && Array.isArray(p.value)) results.push(...p.value);
+
+      // אם DB ריק והחוץ ריק – לא מוותרים: ננסה עוד סיבוב קצר של Wikipedia לא-מסונן
+      if (!results.length && typeof window.searchWikipedia === 'function') {
+        try { results.push(...await window.searchWikipedia(qv)); } catch {}
+      }
+
+      return rankByRelevance(mergeUnique(results), qv).slice(0, 20);
+    }
+
+
+    // --- ספק 1: Firestore (קטלוג פרטי שלך) ---
+    async function searchFirestore(qStr){
+      const qRaw = (qStr||'').trim();
+      const qLower = qRaw.toLowerCase();
+
+      const runPrefix = async (field, value) => {
+        const qs = query(PLAYS, where(field, ">=", value), where(field, "<=", value + '\uf8ff'), limit(20));
+        const snap = await getDocs(qs);
+        return snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      };
+      const runEq = async (field, value) => {
+        try{
+          const qs = query(PLAYS, where(field, '==', value), limit(20));
+          const snap = await getDocs(qs);
+          return snap.docs.map(d=>({id:d.id, ...d.data()}));
+        }catch{ return []; }
+      };
+
+      const buckets = [];
+      buckets.push(await runPrefix('titleLower', qLower).catch(()=>[]));
+      buckets.push(await runPrefix('theatreLower', qLower).catch(()=>[]));
+
+      if(buckets.flat().length === 0){
+        buckets.push(await runPrefix('title', qRaw).catch(()=>[]));
+        buckets.push(await runPrefix('theatre', qRaw).catch(()=>[]));
+        buckets.push(await runEq('title', qRaw).catch(()=>[]));
+        buckets.push(await runEq('titleLower', qLower).catch(()=>[]));
+      }
+
+      let all = buckets.flat();
+      if(all.length === 0){
+        try{
+          const snap = await getDocs(query(PLAYS, limit(100)));
+          const docs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+          const incl = (s, t) => String(s||'').toLowerCase().includes(t);
+          all = docs.filter(x =>
+            incl(x.title, qLower) || incl(x.titleLower, qLower) ||
+            incl(x.theatre, qLower) || incl(x.theatreLower, qLower)
+          );
+        }catch{}
+      }
+
+      const seen = new Set();
+      return all
+        .filter(x => { const k=x.id; if(seen.has(k)) return false; seen.add(k); return true; })
+        .map(x => ({
+          id: 'fs_'+x.id,
+          title: x.title || x.originalTitle || '',
+          playwright: x.playwright||'',
+          theatre: x.theatre||'',
+          city: x.city||'',
+          yearPremiered: x.yearPremiered ?? null,
+          overview: x.overview || '',
+          posterUrl: x.posterUrl || '',
+          source: 'Firestore'
+        }));
+    }
+
+    // --- ספק 2: Wikidata (מחזות Q25379) ---
+async function searchWikidata(qStr){
+  var endpoint = 'https://query.wikidata.org/sparql';
+  var esc = String(qStr || '').replace(/[\"]/g, '');
+  var queryStr =
+    'SELECT ?item ?itemLabel ?authorLabel ?inception ?image WHERE {' +
+    ' ?item wdt:P31/wdt:P279* wd:Q25379.' +
+    ' ?item rdfs:label ?itemLabel.' +
+    " FILTER(LANG(?itemLabel) IN ('he','en'))" +
+    ' FILTER(CONTAINS(LCASE(STR(?itemLabel)), LCASE("' + esc + '")))' +
+    ' OPTIONAL { ?item wdt:P50 ?author. }' +
+    ' OPTIONAL { ?item wdt:P571 ?inception. }' +
+    ' OPTIONAL { ?item wdt:P18 ?image. }' +
+    ' SERVICE wikibase:label { bd:serviceParam wikibase:language "he,en". }' +
+    ' } LIMIT 12';
+
+  var url = endpoint + '?format=json&query=' + encodeURIComponent(queryStr);
+  var j = await safeFetchJson(url, { 'Accept': 'application/sparql-results+json' });
+  var rows = (j.results && j.results.bindings) || [];
+  return rows.map(function(b){
+    return {
+      id: 'wd_' + ((b.item && b.item.value) || ''),
+      title: (b.itemLabel && b.itemLabel.value) || '',
+      playwright: (b.authorLabel && b.authorLabel.value) || '',
+      yearPremiered: b.inception ? String(b.inception.value).slice(0,4) : null,
+      posterUrl: (b.image && b.image.value) || '',
+      overview: '',
+      theatre: '',
+      city: '',
+      source: 'Wikidata'
+    };
+  });
+}
+
+// --- ספק 3: Wikipedia (חיפוש מהיר + תקציר + מסנן קטגוריות מחזות/תיאטרון) ---
+// משתמש בפילטר ואז משלים תקצירים ל-8 ראשונים
+async function searchWikipedia(qStr){
+  const arr = await (typeof searchWikipediaFiltered === 'function'
+    ? searchWikipediaFiltered(qStr).catch(()=>[])
+    : []);
+  for (let i = 0; i < Math.min(arr.length, 8); i++){
+    if (!arr[i].overview && (arr[i].source === 'ויקיפדיה' || arr[i].source === 'Wikipedia')) {
+      try { arr[i].overview = await wikiExtract(arr[i].lang || 'he', arr[i].title); } catch {}
+    }
+  }
+  return arr;
+}
+
+
+async function searchWikipediaFiltered(qStr){
+  var he = await wikiSearchLang('he', qStr, true).catch(function(){return[];});
+  var en = await wikiSearchLang('en', qStr, true).catch(function(){return[];});
+  var arr = he.concat(en);
+  if(arr.length===0) return [];
+  var byLang={}, out=[];
+  for(var i=0;i<arr.length;i++){
+    var x=arr[i]; (byLang[x.lang]||(byLang[x.lang]=[])).push(x);
+  }
+  for(var lang in byLang){
+    var items = byLang[lang];
+    var ids = items.map(function(x){ return x.id.split('_').pop(); });
+    var cats = await wikiFetchCategories(lang, ids).catch(function(){return{};});
+    for(var j=0;j<items.length;j++){
+      var it=items[j]; var pid=it.id.split('_').pop();
+      var got = cats[pid] || [];
+      var keep = got.some(function(c){ return /(מחז[אה]|תיאטרון|play|theatre|drama)/i.test(c); });
+      if(keep) out.push(it);
+    }
+  }
+  return out;
+}
+
+async function wikiSearchLang(lang, qStr, titleOnly){
+  if (titleOnly === undefined) titleOnly = false;
+  var sr = titleOnly ? ('intitle:"' + String(qStr || '') + '"') : String(qStr || '');
+  var api = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&list=search&srsearch=' +
+            encodeURIComponent(sr) + '&srwhat=title&srlimit=10&format=json&origin=*';
+  var j = await safeFetchJson(api);
+  var pages = (j.query && j.query.search) || [];
+  return pages.map(function(p){
+    return {
+      id: 'wp_' + lang + '_' + p.pageid,
+      title: p.title,
+      playwright: '',
+      yearPremiered: null,
+      posterUrl: '',
+      overview: (p.snippet || '').replace(/<[^>]+>/g,'').slice(0,240),
+      theatre: '',
+      city: '',
+      lang: lang,
+      source: (lang==='he' ? 'ויקיפדיה' : 'Wikipedia')
+    };
+  });
+}
+
+async function wikiFetchCategories(lang, pageIds){
+  if (!pageIds || !pageIds.length) return {};
+  var api = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&prop=categories&clshow=!hidden&cllimit=50&pageids=' +
+            pageIds.join('|') + '&format=json&origin=*';
+  var j = await safeFetchJson(api);
+  var pages = (j.query && j.query.pages) || {};
+  var map = {};
+  for (var k in pages){
+    var p = pages[k]; map[String(p.pageid)] = (p.categories || []).map(function(c){ return c.title || ''; });
+  }
+  return map;
+}
+
+async function wikiExtract(lang, title){
+  try{
+    var api = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=' +
+              encodeURIComponent(title) + '&format=json&origin=*';
+    var j = await safeFetchJson(api);
+    var pages = (j.query && j.query.pages) || {};
+    var keys = Object.keys(pages);
+    var first = keys.length ? pages[keys[0]] : null;
+    return first && first.extract ? String(first.extract).slice(0,400) : '';
+  }catch(e){ return ''; }
+}
+
+// === ספינר חיפוש + דיליי === חיפוש + דיליי ===
+    function showSpinner(){ searchResults.classList.remove('hidden'); searchSpinner.classList.remove('hidden'); }
+    function hideSpinner(){ searchSpinner.classList.add('hidden'); }
+
+    let searchTimer;
+    playInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const qv = playInput.value.trim();
+      if(!qv){ searchResults.classList.add('hidden'); return; }
+      searchTimer = setTimeout(performSearch, 300);
+    });
+
+    async function performSearch(){
+      const qv = (playInput.value || '').trim();
+      if (!qv || qv.length < (SEARCH?.minChars || 2)) {
+        searchResults.classList.add('hidden'); hideSpinner(); return;
+      }
+      showSpinner();
+      try {
+        const items = await searchUnified(qv);
+        await enrichWikiExtracts(items, 8);   // משלים תמצית ל-8 הראשונים מוויקיפדיה
+        renderSearchResults(items);
+      } catch (e) {
+        console.error('[SearchEngine]', e);
+        searchResults.innerHTML =
+          '<div class="p-3 text-sm text-red-600">שגיאה במנוע החיפוש: ' + (e?.message || e) + '</div>';
+        searchResults.classList.remove('hidden');
+      } finally {
+        hideSpinner();
+      }
+    }
+
+    async function enrichWikiExtracts(items, limit){
+      try{
+        const idxs = [];
+        for (let i=0; i<items.length && idxs.length<(limit||5); i++){
+          const it = items[i];
+          if ((it.source==='Wikipedia' || it.source==='ויקיפדיה') && !it.overview) idxs.push(i);
+        }
+        await Promise.all(idxs.map(async i=>{
+          try { items[i].overview = await wikiExtract(items[i].lang || 'he', items[i].title); } catch {}
+        }));
+      }catch{}
+    }
+
+    function renderSearchResults(items){
+      searchResults.innerHTML = '';
+      const tpl = document.getElementById('resultItemTpl');
+
+      if (!tpl || !tpl.content) {
+        // רנדר בסיסי כדי לא ליפול אם חסר template
+        searchResults.innerHTML = (items||[]).map(function(it){
+          var ov = (it.overview || '').replace(/[<>]/g, ''); // sanitize קל
+          return '<div class="p-3 border-b cursor-pointer">' +
+                  '<div class="font-bold">' + (it.title||'') + (it.yearPremiered?(' ('+it.yearPremiered+')'):'') + '</div>' +
+                  '<div class="text-xs opacity-70">' + (it.source||'') + '</div>' +
+                  '<div class="text-sm line-clamp-3">' + ov + '</div>' +
+                '</div>';
+        }).join('');
+        searchResults.classList.remove('hidden');
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      (items||[]).forEach(function(it){
+        const node = tpl.content.firstElementChild.cloneNode(true);
+        const img = node.querySelector('img');
+        if (img) {
+          if (it.posterUrl) { img.src = it.posterUrl; img.classList.remove('hidden'); }
+          else { img.removeAttribute('src'); img.classList.add('hidden'); }
+        }
+        node.querySelector('.name').textContent = (it.title||'') + (it.yearPremiered?(' ('+it.yearPremiered+')'):'');
+        const sub = [it.playwright, it.theatre, it.city].filter(Boolean).join(' • ');
+        node.querySelector('.sub').textContent = sub + (it.source?(' • ' + it.source):'');
+        node.querySelector('.overview').textContent = it.overview || '';
+
+        node.addEventListener('click', function(e){
+          e.preventDefault();
+          const det = normalizePlay(it);
+          pickedPlayJson.value = JSON.stringify(det);
+          showPickedPreview(det);
+          playInput.value = det.title + (det.yearPremiered?(' ('+det.yearPremiered+')'):'');
+          searchResults.classList.add('hidden');
+        });
+        frag.appendChild(node);
+      });
+
+      searchResults.appendChild(frag);
+      searchResults.classList.remove('hidden');
+    }
+
+
+    function normalizePlay(x){
+      return {
+        mediaType: 'play',
+        playId: String(x.id || ''),
+        title: x.title || '',
+        originalTitle: x.originalTitle || x.title || '',
+        overview: x.overview || '',
+        posterUrl: x.posterUrl || '',
+        genres: Array.isArray(x.genres)?x.genres:[],
+        cast: Array.isArray(x.cast)?x.cast:[],
+        playwright: x.playwright || '',
+        theatre: x.theatre || '',
+        city: x.city || '',
+        yearPremiered: x.yearPremiered ?? null,
+        rating: (typeof x.rating==='number')?x.rating:null
+      };
+    }
+
+    function showPickedPreview(det){
+      preview.host.classList.remove('hidden');
+      if(det.posterUrl){ preview.poster.src = det.posterUrl; preview.poster.classList.remove('hidden'); }
+      else { preview.poster.removeAttribute('src'); preview.poster.classList.add('hidden'); }
+
+      const fullTitle = det.title + (det.yearPremiered?` (${det.yearPremiered})`:'');
+      preview.title.textContent = fullTitle;
+
+      preview.chips.innerHTML = '';
+      if(det.rating!=null){ addChip('★ '+det.rating); }
+      if(det.theatre){ addChip(det.theatre); }
+      if(det.city){ addChip(det.city); }
+      (det.genres||[]).forEach(g=>addChip(g));
+
+      preview.credits.textContent = [det.playwright, det.cast?.slice(0,5).join(', ')].filter(Boolean).join(' • ');
+      preview.overview.textContent = det.overview || '';
+
+      function addChip(txt){ const s=document.createElement('span'); s.className='chip px-2 py-1 rounded-full text-xs'; s.textContent=txt; preview.chips.appendChild(s); }
+    }
+
+    function clearPicked(){
+      playInput.value = '';
+      pickedPlayJson.value = '';
+      if (preview.poster) { preview.poster.removeAttribute('src'); preview.poster.classList.add('hidden'); }
+      if (preview.host) { preview.host.classList.add('hidden'); }
+      searchResults.classList.add('hidden');
+    }
+
+    $('#clearBtn').addEventListener('click', () => { clearPicked(); notesEl.value=''; saveStatus.textContent=''; attendDateEl.value=todayStr; playInput.focus(); });
+    document.addEventListener('click', (ev)=>{ if(!searchResults.contains(ev.target) && ev.target!==playInput){ searchResults.classList.add('hidden'); } });
+    document.addEventListener('keydown', (ev)=>{ if(ev.key==='Escape'){ searchResults.classList.add('hidden'); } });
+    $('#unpickBtn')?.addEventListener('click', ()=>{ clearPicked(); playInput.focus(); });
+
+    // === שמירה ל-views עם mediaType:'play' ===
+    $('#addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const picked = pickedPlayJson.value ? JSON.parse(pickedPlayJson.value) : null;
+      const title = playInput.value.trim();
+      if(!title){ saveStatus.textContent='נא להזין שם הצגה'; return; }
+      const base = picked || { playId:`manual_${Date.now()}`, title, originalTitle:title, overview:'', posterUrl:'', genres:[], cast:[], source:'manual', mediaType:'play' };
+      const attendDateStr = attendDateEl.value || todayStr;
+      const attendTs = Timestamp.fromDate(new Date(attendDateStr + 'T12:00:00'));
+
+      const docData = {
+        mediaType: 'play',
+        playId: base.playId?.toString() || '',
+        title: base.title||title,
+        originalTitle: base.originalTitle||title,
+        titleLower:(base.title||title).toLowerCase(),
+        originalLower:(base.originalTitle||title).toLowerCase(),
+        overview: base.overview||'',
+        posterUrl: base.posterUrl||'',
+        genres: base.genres||[],
+        cast: base.cast||[],
+        playwright: base.playwright||'',
+        theatre: base.theatre||'',
+        city: base.city||'',
+        yearPremiered: base.yearPremiered??null,
+        userRating: base.rating??null,
+        attendDate: attendTs,
+        notes: notesEl.value.trim(),
+        source: picked?'catalog':'manual',
+        createdAt: serverTimestamp()
+      };
+      try{
+        await addDoc(VIEWS, docData);
+        saveStatus.textContent='נשמר ✔';
+        playInput.value=''; notesEl.value=''; pickedPlayJson.value=''; preview.host.classList.add('hidden');
+      }catch(err){
+        console.error('addDoc error', err);
+        saveStatus.innerHTML = `<span class="alert">שגיאה בשמירה: ${err?.code||''} ${err?.message||''}</span>`;
+      }
+    });
+
+    // === מאזינים אחרי שהמשתמש מחובר (rules עלולות לדרוש auth) ===
+    signInAnonymously(auth).catch(e=>console.warn('anon auth failed', e));
+    onAuthStateChanged(auth, (user) => {
+      if(!user){ return; }
+      attachViewsListener();
+    });
+
+    function attachViewsListener(){
+      setViewsLoading(true);
+      const qPlays = query(VIEWS, where('mediaType','==','play'));
+      onSnapshot(qPlays, (snap) => {
+        const arr = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+        allViews = arr.sort((a,b)=>{
+          const aMs = millisFromFirestoreTs(a.attendDate) || millisFromFirestoreTs(a.createdAt);
+          const bMs = millisFromFirestoreTs(b.attendDate) || millisFromFirestoreTs(b.createdAt);
+          return (bMs||0) - (aMs||0);
+        });
+        renderViews();
+        rebuildFacetFilters();
+        setViewsLoading(false);
+      }, (err)=>{
+        console.error('onSnapshot error', err);
+        setViewsLoading(false);
+        viewsList.innerHTML = `<div class=\"alert\">שגיאת קריאה מה-DB: ${err?.code||''} ${err?.message||''}. בדוק הרשאות Rules/Indexes.</div>`;
+      });
+    }
+
+    function renderViews(){
+      const term = ($('#searchBox').value||'').trim().toLowerCase();
+      const theatreSel = $('#theatreFilter').value;
+      const citySel = $('#cityFilter').value;
+      const from = $('#fromDate').value; const to = $('#toDate').value;
+
+      const withinDate = (ts) => {
+        if(!from && !to) return true;
+        const ms = millisFromFirestoreTs(ts);
+        if(!ms) return false; // אם אין תאריך, לא להציג כשמסננים לפי טווח
+        const d = toDateOnly(new Date(ms));
+        if(from && d<from) return false; if(to && d>to) return false; return true;
+      };
+
+      const filtered = allViews.filter(v =>
+        okText(v) && okTheatre(v) && okCity(v) && withinDate(v.attendDate)
+      );
+
+      function okText(v){
+        const fields = [v.titleLower, v.originalLower, (v.theatre||'').toLowerCase(), (v.city||'').toLowerCase(), (v.playwright||'').toLowerCase()];
+        return !term || fields.some(f => f && f.includes(term));
+      }
+      function okTheatre(v){ return !theatreSel || v.theatre===theatreSel; }
+      function okCity(v){ return !citySel || v.city===citySel; }
+
+      viewsList.innerHTML='';
+      filtered.forEach(v => {
+        const node = viewCardTpl.content.firstElementChild.cloneNode(true);
+        const img = node.querySelector('img');
+        if(v.posterUrl){ img.src = v.posterUrl; img.classList.remove('hidden'); } else { img.removeAttribute('src'); img.classList.add('hidden'); }
+
+        const nameEl = node.querySelector('.name');
+        nameEl.textContent = v.title + (v.yearPremiered?` (${v.yearPremiered})`:'');
+        const showDateMs = millisFromFirestoreTs(v.attendDate) || millisFromFirestoreTs(v.createdAt);
+        node.querySelector('.date').textContent = showDateMs ? fmtDate(new Date(showDateMs)) : '';
+
+        const chips = node.querySelector('.chips');
+        if(v.userRating!=null){ addChip(chips, '★ '+v.userRating); }
+        if(v.theatre){ addChip(chips, v.theatre); }
+        if(v.city){ addChip(chips, v.city); }
+        (v.genres||[]).forEach(g=>addChip(chips,g));
+
+        node.querySelector('.overview').textContent = v.overview || '';
+        node.querySelector('.credits').textContent = [v.playwright, v.cast?.slice(0,5).join(', ')].filter(Boolean).join(' • ');
+        node.querySelector('.notes').textContent = v.notes ? `הערות: ${v.notes}` : '';
+
+        const del = node.querySelector('.delBtn');
+        del?.addEventListener('click', async (e)=>{ e.preventDefault(); e.stopPropagation(); if(!confirm('למחוק את הרשומה הזו?')) return; try{ await deleteDoc(doc(db,'views',v.id)); }catch{ alert('שגיאה במחיקה'); } });
+
+        const editRow=node.querySelector('.editRow'); const editBtn=node.querySelector('.editBtn'); const cancelBtn=node.querySelector('.cancelEdit'); const saveBtn=node.querySelector('.saveEdit'); const editDate=node.querySelector('.editDate'); const editNotes=node.querySelector('.editNotes');
+        if(editDate) editDate.value = showDateMs ? toDateOnly(new Date(showDateMs)) : '';
+        if(editNotes) editNotes.value = v.notes || '';
+        editBtn?.addEventListener('click', (e)=>{ e.preventDefault(); editRow?.classList.toggle('hidden'); });
+        cancelBtn?.addEventListener('click',(e)=>{ e.preventDefault(); editRow?.classList.add('hidden'); });
+        saveBtn?.addEventListener('click', async (e)=>{
+          e.preventDefault();
+          try{
+            const newDateStr = editDate?.value || toDateOnly(new Date());
+            const newTs = Timestamp.fromDate(new Date(newDateStr + 'T12:00:00'));
+            const newNotes = (editNotes?.value||'').trim();
+            await updateDoc(doc(db,'views',v.id), { attendDate:newTs, notes:newNotes });
+            editRow?.classList.add('hidden');
+          }catch(err){ alert('שגיאה בעדכון'); console.error('update error', err); }
+        });
+
+        viewsList.appendChild(node);
+      });
+    }
+
+    function addChip(host, txt){ const s=document.createElement('span'); s.className='chip px-2 py-1 rounded-full text-xs'; s.textContent=txt; host.appendChild(s); }
+
+    function rebuildFacetFilters(){
+      // תיאטרון
+      const thSel = $('#theatreFilter'); const thSet = new Set();
+      allViews.forEach(v => v.theatre && thSet.add(v.theatre));
+      const thCur = thSel.value; thSel.innerHTML = '<option value="">הכול</option>' + Array.from(thSet).sort((a,b)=>a.localeCompare(b,'he')).map(x=>`<option>${x}</option>`).join(''); if([...thSel.options].some(o=>o.value===thCur)) thSel.value=thCur;
+      // עיר
+      const ciSel = $('#cityFilter'); const ciSet = new Set();
+      allViews.forEach(v => v.city && ciSet.add(v.city));
+      const ciCur = ciSel.value; ciSel.innerHTML = '<option value="">הכול</option>' + Array.from(ciSet).sort((a,b)=>a.localeCompare(b,'he')).map(x=>`<option>${x}</option>`).join(''); if([...ciSel.options].some(o=>o.value===ciCur)) ciSel.value=ciCur;
+    }
+
+    // קיצורי מקשים: F1 פתח חיפוש, F2 טוגל, F3 ממקד "שם הצגה"
+    window.addEventListener('keydown', (e) => {
+      if(e.code==='F1'){ e.preventDefault(); setExpanded(true); document.querySelector('#searchBox')?.focus(); }
+      if(e.code==='F2'){ e.preventDefault(); const willOpen = searchPanel.classList.contains('hidden'); setExpanded(willOpen); if(willOpen) document.querySelector('#searchBox')?.focus(); }
+      if(e.code==='F3'){ e.preventDefault(); document.querySelector('#playInput')?.focus(); }
+    });
+
+    // חיפוש/סינון
+    $('#searchBox').addEventListener('input', renderViews);
+    $('#theatreFilter').addEventListener('change', renderViews);
+    $('#cityFilter').addEventListener('change', renderViews);
+    $('#fromDate').addEventListener('change', renderViews);
+    $('#toDate').addEventListener('change', renderViews);
+
+    // ניקוי קריטריונים
+    document.querySelector('#clearFilters')?.addEventListener('click', () => {
+      const sb=$('#searchBox'), th=$('#theatreFilter'), ci=$('#cityFilter'), fd=$('#fromDate'), td=$('#toDate');
+      if(sb) sb.value=''; if(th) th.value=''; if(ci) ci.value=''; if(fd){ fd.value=''; fd.disabled=false; } if(td){ td.value=''; td.disabled=false; }
+      renderViews(); sb?.focus();
+    });
+
+    // טוגל פס החיפוש
+    toggleBtn = document.querySelector('#toggleSearch');
+    searchPanel = document.querySelector('#searchPanel');
+    caretEl = document.querySelector('#caret');
+    function setExpanded(expanded){
+      const hide = !expanded;
+      searchPanel.classList.toggle('hidden', hide);
+      if(toggleBtn) toggleBtn.setAttribute('aria-expanded', String(!hide));
+      if(caretEl) caretEl.textContent = hide ? '▼' : '▲';
+    }
+    toggleBtn?.addEventListener('click', () => {
+      const willOpen = searchPanel.classList.contains('hidden');
+      setExpanded(willOpen);
+      if(willOpen) document.querySelector('#searchBox')?.focus();
+    });
+
+    function setViewsLoading(on){
+      if(!viewsSpinner) return;
+      if(on){ viewsSpinner.classList.remove('hidden'); }
+      else { viewsSpinner.classList.add('hidden'); }
+    }
+
+    // === בדיקות (test cases) ===
+    (function runTests(){
+      const out = [];
+      const asrt = (name, cond) => out.push(`<div>${cond? '✅':'❌'} ${name}</div>`);
+
+      // 1) millisFromFirestoreTs – מחרוזת תקינה
+      asrt('millisFromFirestoreTs("2025-01-02")', millisFromFirestoreTs('2025-01-02')>0);
+      // 2) millisFromFirestoreTs – אובייקט עם seconds
+      asrt('millisFromFirestoreTs({seconds: 1704153600})', millisFromFirestoreTs({seconds:1704153600})===1704153600*1000);
+      // 3) mergeUnique מאחד כפילויות ומעדיף פריטים עם פוסטר/סקירה
+      const merged = mergeUnique([
+        {title:'המלט', playwright:'שייקספיר', posterUrl:'', overview:'a'},
+        {title:'המלט', playwright:'שייקספיר', posterUrl:'X', overview:'longer text here'}
+      ]);
+      asrt('mergeUnique keeps 1 item', merged.length===1 && merged[0].posterUrl==='X' && merged[0].overview.includes('longer'));
+      // 4) מיון בצד לקוח לא נופל ללא attendDate
+      const arr = [ {createdAt:{seconds:5}}, {attendDate:{seconds:10}}, {} ];
+      arr.sort((a,b)=>{ const aMs = millisFromFirestoreTs(a.attendDate)||millisFromFirestoreTs(a.createdAt); const bMs = millisFromFirestoreTs(b.attendDate)||millisFromFirestoreTs(b.createdAt); return (bMs||0)-(aMs||0); });
+      asrt('client sort survives missing dates', Array.isArray(arr));
+
+      document.getElementById('testPanel').innerHTML = out.join('');
+    })();
+
+    async function safeFetchJson(url, headers){
+      const r = await fetch(url, { headers: headers || {} });
+      if (!r.ok) throw new Error('HTTP '+r.status+' '+r.statusText+' @ '+url);
+      try { return await r.json(); } catch { throw new Error('Bad JSON @ '+url); }
+    }
+
+
+  </script>
+</body>
+</html>
