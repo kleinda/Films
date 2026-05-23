@@ -520,14 +520,28 @@ $("#addForm").addEventListener("submit", async (e) => {
 });
 
 // === Auth UI handlers ===
-document.getElementById("signInBtn")?.addEventListener("click", async () => {
-  try {
-    await signInWithPopup(auth, googleProvider);
-  } catch (err) {
-    console.error("Sign in failed:", err);
-    alert("כניסה נכשלה – נסה שוב");
+const isChromeIOS = /CriOS/i.test(navigator.userAgent);
+
+// Chrome ב-iOS חוסם popups – מציגים הנחיה לפתוח בסאפרי
+if (isChromeIOS) {
+  const btn = document.getElementById("signInBtn");
+  if (btn) {
+    btn.innerHTML = `<span>פתח ב-Safari להתחברות</span>`;
+    btn.addEventListener("click", () => {
+      window.location.href = "x-web-search://?url=" + encodeURIComponent(location.href);
+      setTimeout(() => alert("העתק את הקישור ופתח אותו ב-Safari:\n" + location.href), 500);
+    });
   }
-});
+} else {
+  document.getElementById("signInBtn")?.addEventListener("click", async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Sign in failed:", err);
+      alert("כניסה נכשלה – נסה שוב");
+    }
+  });
+}
 
 document.getElementById("signOutBtn")?.addEventListener("click", async () => {
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
